@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Таскер - управление задачами</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin-left: 20px;
+            margin-right: auto;
+        }
+
+        h1 {
+            text-align: left;
+            color: white;
+            margin-bottom: 5px;
+            font-size: 1.8em;
+        }
+
+        .subtitle {
+            text-align: left;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: left;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 0.9em;
+        }
+
+        .stats span {
+            margin-right: 20px;
+        }
+
+        .stats .total { color: #667eea; font-weight: bold; }
+        .stats .completed { color: #27ae60; font-weight: bold; }
+        .stats .pending { color: #e67e22; font-weight: bold; }
+
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .task-card:hover {
+            transform: translateX(3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .task-card.completed {
+            background: #e0e0e0;
+            opacity: 0.7;
+        }
+
+        .task-card.completed .task-title {
+            color: #666;
+            text-decoration: line-through;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .task-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #2c3e50;
+            flex: 1;
+        }
+
+        .custom-checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .task-details {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 12px;
+            margin-top: 6px;
+            font-size: 0.85em;
+        }
+
+        .date-block {
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .time-range {
+            font-family: monospace;
+            background: #eef;
+            padding: 4px 10px;
+            border-radius: 4px;
+            color: #2980b9;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .duration {
+            background: #e8f0fe;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #8e44ad;
+            font-size: 0.85em;
+        }
+
+        /* Категория – простой прямоугольник без границы и скругления */
+        .category {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            font-size: 0.75em;
+            font-weight: 500;
+            border-radius: 0px;
+        }
+
+        /* Бейдж важности (скруглённый) */
+        .priority {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: auto;  /* прижимаем к правому краю */
+        }
+        .priority-low { background: #2ecc71; color: #1e1e1e; }
+        .priority-medium { background: #f1c40f; color: #1e1e1e; }
+        .priority-high { background: #e74c3c; color: white; }
+        .priority-very-high { background: #2c3e50; color: white; }
+
+        .loading, .error {
+            text-align: center;
+            padding: 30px;
+            font-size: 1em;
+            background: rgba(0,0,0,0.5);
+            border-radius: 12px;
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { margin-left: 10px; }
+            .task-card { padding: 10px; }
+            .task-title { font-size: 1em; }
+            .task-details { gap: 8px; font-size: 0.8em; }
+            .time-range { font-size: 1em; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Мои задачи</h1>
+    <div class="subtitle">Управляй своим временем</div>
+    <div class="stats" id="stats">
+        <span>Всего: <span class="total" id="total-count">0</span></span>
+        <span>Выполнено: <span class="completed" id="completed-count">0</span></span>
+        <span>В работе: <span class="pending" id="pending-count">0</span></span>
+    </div>
+    <div id="tasks-container" class="tasks-list">
+        <div class="loading">Загрузка задач...</div>
+    </div>
+</div>
+
+<script>
+    async function loadTasks() {
+        const container = document.getElementById('tasks-container');
+        container.innerHTML = '<div class="loading">Загрузка...</div>';
+        try {
+            const response = await fetch('/api/tasks');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const tasks = data.message;
+            if (!tasks.length) {
+                container.innerHTML = '<div class="error">Нет задач</div>';
+                return;
+            }
+            displayTasks(tasks);
+            updateStats(tasks);
+        } catch (error) {
+            container.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+        }
+    }
+
+    function formatDateOnly(dateString) {
+        const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+        const [date] = dateString.split(' ');
+        const [day, month] = date.split('.');
+        return `${parseInt(day)} ${months[parseInt(month)-1]}`;
+    }
+
+    function extractTime(dateString) {
+        const [, time] = dateString.split(' ');
+        return time;
+    }
+
+    function getPriorityClass(priority) {
+        switch(priority) {
+            case 'Низкая': return 'priority priority-low';
+            case 'Средняя': return 'priority priority-medium';
+            case 'Высокая': return 'priority priority-high';
+            case 'Очень высокая': return 'priority priority-very-high';
+            default: return 'priority priority-medium';
+        }
+    }
+
+    async function toggleTaskStatus(taskId, currentStatus, event) {
+        event.stopPropagation();
+        try {
+            const response = await fetch(`/api/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Состояние: !currentStatus })
+            });
+            if (response.ok) await loadTasks();
+        } catch (error) { console.error(error); }
+    }
+
+    function displayTasks(tasksList) {
+        const container = document.getElementById('tasks-container');
+        container.innerHTML = '';
+        for (const task of tasksList) {
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            if (task['Состояние']) card.classList.add('completed');
+
+            const taskDate = formatDateOnly(task['Начало выполнения']);
+            const startTime = extractTime(task['Начало выполнения']);
+            const endTime = extractTime(task['Конец выполнения']);
+            const timeRange = `${startTime} - ${endTime}`;
+            const duration = task['Длительность'];
+
+            const priorityClass = getPriorityClass(task['Важность']);
+            const priorityText = task['Важность'];
+
+            let categoryHtml = '';
+            if (task['Категория'] !== 'Не указана') {
+                categoryHtml = `<span class="category">${escapeHtml(task['Категория'])}</span>`;
+            }
+
+            card.innerHTML = `
+                <div class="task-header">
+                    <div class="task-title">${escapeHtml(task['Название'])}</div>
+                    <input type="checkbox" class="custom-checkbox"
+                           ${task['Состояние'] ? 'checked' : ''}
+                           onchange="toggleTaskStatus('${task['id']}', ${task['Состояние']}, event)">
+                </div>
+                <div class="task-details">
+                    <span class="date-block">${taskDate}</span>
+                    <span class="time-range">${timeRange}</span>
+                    <span class="duration">⏱ ${duration} мин</span>
+                    ${categoryHtml}
+                    <div style="flex:1"></div>
+                    <span class="${priorityClass}">${priorityText}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+    }
+
+    function updateStats(tasksList) {
+        const total = tasksList.length;
+        const completed = tasksList.filter(t => t['Состояние']).length;
+        document.getElementById('total-count').textContent = total;
+        document.getElementById('completed-count').textContent = completed;
+        document.getElementById('pending-count').textContent = total - completed;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    loadTasks();
+</script>
+</body>
+</html>
