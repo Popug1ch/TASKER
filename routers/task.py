@@ -1,6 +1,6 @@
 from typing import Optional
-from datetime import datetime, time
-from fastapi import APIRouter, HTTPException, status, Query
+from datetime import datetime, timedelta
+from fastapi import APIRouter, HTTPException, Query
 from database import SessionDep
 from schemas.task import STask, STaskAdd, STaskUpdate
 from repository import TaskRepository
@@ -8,7 +8,7 @@ from repository import TaskRepository
 router = APIRouter(prefix="/api/tasks", tags=["Задачи"])
 
 
-@router.post("", response_model=STask, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=STask, status_code=201)
 async def create_task(task: STaskAdd, session: SessionDep):
     return await TaskRepository.add_one(task, session)
 
@@ -16,28 +16,41 @@ async def create_task(task: STaskAdd, session: SessionDep):
 @router.get("", response_model=list[STask])
 async def get_tasks(
     session: SessionDep,
-    date: Optional[str] = Query(None, description="Дата в формате YYYY-MM-DD"),
+    start_date: Optional[str] = Query(None, description="Начало диапазона YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="Конец диапазона YYYY-MM-DD"),
 ):
-    if date:
+    if start_date and end_date:
         try:
-            target_date = datetime.strptime(date, "%Y-%m-%d").date()
+            start = datetime.fromisoformat(start_date)
+            # Чтобы захватить весь день, end_date превращаем в конец дня (следующий день)
+            end = datetime.fromisoformat(end_date) + timedelta(days=1)
         except ValueError:
-            raise HTTPException(
-                status_code=400, detail="Неверный формат даты, используйте YYYY-MM-DD"
-            )
-        start_of_day = datetime.combine(target_date, time.min)
-        end_of_day = datetime.combine(target_date, time.max)
-        tasks = await TaskRepository.find_in_range(session, start_of_day, end_of_day)
+            raise HTTPException(400, "Неверный формат даты, используйте YYYY-MM-DD")
+        tasks = await TaskRepository.find_in_range(session, start, end)
     else:
+        # Без параметров возвращаем все задачи (для цветных точек в календаре)
         tasks = await TaskRepository.find_all(session)
     return tasks
+
+
+@router.get("/week/current")
+async def get_current_week(session: SessionDep):
+    start = await TaskRepository.get_current_week_start(session)
+    end = start + timedelta(days=7)
+    return {"week_start": start.isoformat(), "week_end": end.isoformat()}
+
+
+@router.post("/week/rollover")
+async def rollover_week(session: SessionDep):
+    await TaskRepository.rollover_week(session)
+    return {"success": True}
 
 
 @router.put("/{task_id}/status")
 async def update_task_status(task_id: int, is_completed: bool, session: SessionDep):
     updated = await TaskRepository.update_status(task_id, is_completed, session)
     if updated is None:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
+        raise HTTPException(404, "Задача не найдена")
     return {"success": True}
 
 
@@ -45,7 +58,7 @@ async def update_task_status(task_id: int, is_completed: bool, session: SessionD
 async def update_task(task_id: int, task_data: STaskUpdate, session: SessionDep):
     updated = await TaskRepository.update_task(task_id, task_data, session)
     if updated is None:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
+        raise HTTPException(404, "Задача не найдена")
     return updated
 
 
@@ -53,5 +66,5 @@ async def update_task(task_id: int, task_data: STaskUpdate, session: SessionDep)
 async def delete_task(task_id: int, session: SessionDep):
     deleted = await TaskRepository.delete_task(task_id, session)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
+        raise HTTPException(404, "Задача не найдена")
     return {"success": True}

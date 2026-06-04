@@ -3,186 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Таскер - управление задачами</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 15px;
-        }
-        /* Три колонки: левая (задачи), средняя (пустая), правая (календарь) */
-        .three-columns {
-            display: grid;
-            grid-template-columns: minmax(600px, 800px) 1fr minmax(400px, 520px);
-            gap: 20px;
-            align-items: start;
-            width: 100%;
-        }
-        /* Панель задач – ограничиваем максимальную ширину, но она будет растягиваться до 420px */
-        .tasks-panel {
-            width: 100%;
-        }
-        /* Пустая средняя область – пока без содержимого */
-        .empty-area {
-            /* можно оставить пустым или добавить стили для будущих виджетов */
-            min-height: 50px;
-        }
-        /* Панель календаря */
-        .calendar-panel {
-            background: rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 12px;
-            backdrop-filter: blur(8px);
-        }
-        /* Адаптивность: на узких экранах колонки идут вертикально */
-        @media (max-width: 800px) {
-            .three-columns {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            .empty-area {
-                display: none; /* на мобильных пустую область скрываем */
-            }
-        }
-        /* Стили календаря */
-        .week-days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-        }
-        .day-card {
-            background: rgba(255,255,255,0.9);
-            border-radius: 12px;
-            padding: 6px 2px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            border: 2px solid transparent;
-        }
-        .day-card:hover {
-            transform: translateY(-3px);
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .day-card.active {
-            border-color: #ffd966;
-            background: rgba(255,255,255,0.95);
-        }
-        .day-name {
-            font-weight: bold;
-            font-size: 0.75rem;
-            color: #2c3e50;
-        }
-        .day-number {
-            font-size: 1rem;
-            font-weight: bold;
-            margin: 2px 0;
-        }
-        .priority-dots {
-            display: flex;
-            justify-content: center;
-            gap: 3px;
-            margin-top: 2px;
-        }
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .dot-green { background-color: #2ecc71; }
-        .dot-yellow { background-color: #f1c40f; }
-        .dot-red { background-color: #e74c3c; }
-        .dot-black { background-color: #2c3e50; }
-
-        /* Стили для задач (как были ранее) */
-        h1 { text-align: left; color: white; margin-bottom: 5px; font-size: 1.8em; }
-        .subtitle { text-align: left; color: rgba(255,255,255,0.9); margin-bottom: 15px; font-size: 0.9em; }
-        .top-bar {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
-            flex-wrap: wrap; gap: 10px;
-        }
-        .stats {
-            background: white; border-radius: 10px; padding: 8px 12px;
-            text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 0.85rem;
-            flex: 1;
-        }
-        .stats span { margin-right: 15px; }
-        .stats .total { color: #667eea; font-weight: bold; }
-        .stats .completed { color: #27ae60; font-weight: bold; }
-        .stats .pending { color: #e67e22; font-weight: bold; }
-        .add-task-btn {
-            background: white; border: none; padding: 8px 16px; border-radius: 30px;
-            font-size: 0.9rem; font-weight: bold; color: #667eea; cursor: pointer;
-            transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-        .add-task-btn:hover { transform: scale(1.02); background: #f0f0f0; }
-        .tasks-list { display: flex; flex-direction: column; gap: 10px; }
-        .task-card {
-            background: white; border-radius: 12px; padding: 10px 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: all 0.2s ease;
-        }
-        .task-card:hover { transform: translateX(3px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .task-card.completed { background: #e0e0e0; opacity: 0.7; }
-        .task-card.completed .task-title { color: #666; text-decoration: line-through; }
-        .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .task-title { font-size: 1rem; font-weight: 600; color: #2c3e50; flex: 1; }
-        .task-actions { display: flex; gap: 4px; align-items: center; }
-        .task-actions button {
-            background: none; border: none; cursor: pointer; font-size: 1rem;
-            padding: 2px 6px; border-radius: 6px; transition: background 0.2s;
-            line-height: 1;
-        }
-        .task-actions button:hover { background: rgba(0,0,0,0.08); }
-        .custom-checkbox { width: 18px; height: 18px; cursor: pointer; margin-left: 6px; }
-        .task-details {
-            display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
-            margin-top: 6px; font-size: 0.8rem;
-        }
-        .time-range { font-family: monospace; background: #eef; padding: 2px 6px; border-radius: 4px; color: #2980b9; font-size: 0.85rem; font-weight: 600; }
-        .duration { background: #e8f0fe; padding: 2px 6px; border-radius: 4px; color: #8e44ad; font-size: 0.7rem; }
-        .category { display: inline-block; padding: 2px 6px; background: #ecf0f1; color: #2c3e50; font-size: 0.7rem; border-radius: 4px; }
-        .priority { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-left: auto; }
-        .priority-low { background: #2ecc71; color: #1e1e1e; }
-        .priority-medium { background: #f1c40f; color: #1e1e1e; }
-        .priority-high { background: #e74c3c; color: white; }
-        .priority-very-high { background: #2c3e50; color: white; }
-        /* Модальное окно */
-        .modal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
-            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);
-            justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: white; border-radius: 16px; padding: 20px;
-            width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        .modal-content h2 { margin-bottom: 15px; color: #2c3e50; font-size: 1.4rem; }
-        .form-row { display: flex; gap: 12px; margin-bottom: 12px; }
-        .form-group { flex: 1; }
-        .form-group label { display: block; margin-bottom: 4px; font-weight: 600; color: #34495e; font-size: 0.85rem; }
-        .form-group input, .form-group select { width: 100%; padding: 6px 10px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 0.9rem; }
-        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-        .modal-buttons button { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-save { background: #27ae60; color: white; }
-        .btn-cancel { background: #95a5a6; color: white; }
-        .loading, .error { text-align: center; padding: 30px; font-size: 1em; background: rgba(0,0,0,0.5); border-radius: 12px; color: white; }
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            .task-card { padding: 8px 10px; }
-            .task-title { font-size: 0.9rem; }
-            .time-range { font-size: 0.8rem; }
-            .form-row { flex-direction: column; gap: 8px; }
-            .stats span { margin-right: 8px; font-size: 0.8rem; }
-        }
-    </style>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>Таскер - задачи и события</title>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 <div class="three-columns">
-    <!-- Левая колонка: панель задач -->
     <div class="tasks-panel">
         <h1>Мои задачи</h1>
         <div class="subtitle">Управляй своим временем</div>
@@ -198,17 +24,28 @@
             <div class="loading">Загрузка задач...</div>
         </div>
     </div>
-
-    <!-- Средняя колонка: пустая область (резерв) -->
     <div class="empty-area"></div>
-
-    <!-- Правая колонка: календарь -->
     <div class="calendar-panel">
+        <div class="calendar-nav">
+            <button id="prevWeekBtn">←</button>
+            <span id="weekRange" class="week-range"></span>
+            <button id="nextWeekBtn">→</button>
+        </div>
         <div id="weekCalendar" class="week-days"></div>
+
+        <div class="events-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 8px 0;">
+                <h3 style="color: white; font-size: 1rem;">События</h3>
+                <button id="addEventBtn" class="add-event-btn">+ Создать событие</button>
+            </div>
+            <div id="eventsList" class="events-list">
+                <div class="no-events">В этот день нет событий</div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Модальное окно (без изменений) -->
+<!-- Модалка для задач -->
 <div id="taskModal" class="modal">
     <div class="modal-content">
         <h2 id="modalTitle">Новая задача</h2>
@@ -255,292 +92,28 @@
     </div>
 </div>
 
-<script>
-    let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
-    let allTasksForCalendar = [];
+<!-- Модалка для событий -->
+<div id="eventModal" class="modal">
+    <div class="modal-content">
+        <h2 id="eventModalTitle">Новое событие</h2>
+        <form id="eventForm">
+            <input type="hidden" id="editEventId" value="">
+            <div class="form-group">
+                <label>Название события *</label>
+                <input type="text" id="eventName" required>
+            </div>
+            <div class="form-group">
+                <label>Дата *</label>
+                <input type="date" id="eventDate" required>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-cancel" id="closeEventModalBtn">Отмена</button>
+                <button type="submit" class="btn-save">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    function formatYMD(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    }
-
-    function getMonday(date) {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = (day === 0 ? 6 : day - 1);
-        d.setDate(d.getDate() - diff);
-        return d;
-    }
-
-    async function loadTasks() {
-        const container = document.getElementById('tasks-container');
-        container.innerHTML = '<div class="loading">Загрузка...</div>';
-        const dateParam = formatYMD(currentDate);
-        try {
-            const response = await fetch(`/api/tasks?date=${dateParam}`);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const tasks = await response.json();
-            if (!tasks.length) {
-                container.innerHTML = '<div class="error">Нет задач на этот день</div>';
-                updateStats([]);
-                return;
-            }
-            displayTasks(tasks);
-            updateStats(tasks);
-        } catch (error) {
-            container.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
-        }
-    }
-
-    async function loadAllTasksForCalendar() {
-        try {
-            const response = await fetch('/api/tasks');
-            if (!response.ok) throw new Error();
-            allTasksForCalendar = await response.json();
-            renderCalendar();
-        } catch (error) {
-            console.error("Ошибка загрузки календаря", error);
-        }
-    }
-
-    function renderCalendar() {
-        const monday = getMonday(new Date());
-        const container = document.getElementById('weekCalendar');
-        container.innerHTML = '';
-        const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-        for (let i = 0; i < 7; i++) {
-            const dayDate = new Date(monday);
-            dayDate.setDate(monday.getDate() + i);
-            const ymd = formatYMD(dayDate);
-            const prioritiesSet = new Set();
-            allTasksForCalendar.forEach(task => {
-                const taskDate = task.start_time.split('T')[0];
-                if (taskDate === ymd) {
-                    prioritiesSet.add(task.priority);
-                }
-            });
-            const hasGreen = prioritiesSet.has('Низкая');
-            const hasYellow = prioritiesSet.has('Средняя');
-            const hasRed = prioritiesSet.has('Высокая');
-            const hasBlack = prioritiesSet.has('Очень высокая');
-
-            const dayCard = document.createElement('div');
-            dayCard.className = 'day-card';
-            if (formatYMD(currentDate) === ymd) dayCard.classList.add('active');
-            dayCard.innerHTML = `
-                <div class="day-name">${dayNames[i]}</div>
-                <div class="day-number">${dayDate.getDate()}</div>
-                <div class="priority-dots">
-                    ${hasGreen ? '<span class="dot dot-green"></span>' : ''}
-                    ${hasYellow ? '<span class="dot dot-yellow"></span>' : ''}
-                    ${hasRed ? '<span class="dot dot-red"></span>' : ''}
-                    ${hasBlack ? '<span class="dot dot-black"></span>' : ''}
-                </div>
-            `;
-            dayCard.addEventListener('click', () => {
-                currentDate = new Date(dayDate);
-                currentDate.setHours(0,0,0,0);
-                loadTasks();
-                renderCalendar();
-            });
-            container.appendChild(dayCard);
-        }
-    }
-
-    function extractTime(isoString) {
-        const date = new Date(isoString);
-        return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function getPriorityClass(priority) {
-        switch(priority) {
-            case 'Низкая': return 'priority priority-low';
-            case 'Средняя': return 'priority priority-medium';
-            case 'Высокая': return 'priority priority-high';
-            case 'Очень высокая': return 'priority priority-very-high';
-            default: return 'priority priority-medium';
-        }
-    }
-
-    async function toggleTaskStatus(taskId, currentStatus, event) {
-        event.stopPropagation();
-        try {
-            const response = await fetch(`/api/tasks/${taskId}/status?is_completed=${!currentStatus}`, { method: 'PUT' });
-            if (response.ok) {
-                await loadTasks();
-                await loadAllTasksForCalendar();
-            }
-        } catch (error) { console.error(error); }
-    }
-
-    async function deleteTask(taskId, event) {
-        event.stopPropagation();
-        if (confirm('Удалить задачу?')) {
-            try {
-                const response = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
-                if (response.ok) {
-                    await loadTasks();
-                    await loadAllTasksForCalendar();
-                } else alert('Ошибка удаления');
-            } catch (error) { alert('Ошибка: ' + error.message); }
-        }
-    }
-
-    async function editTask(taskId, event) {
-        event.stopPropagation();
-        try {
-            const response = await fetch(`/api/tasks?date=${formatYMD(currentDate)}`);
-            const tasks = await response.json();
-            const task = tasks.find(t => t.id === taskId);
-            if (task) {
-                document.getElementById('modalTitle').innerText = 'Редактировать задачу';
-                document.getElementById('taskName').value = task.name;
-                const datePart = task.start_time.split('T')[0];
-                const startTimePart = task.start_time.split('T')[1].slice(0,5);
-                const endTimePart = task.end_time.split('T')[1].slice(0,5);
-                document.getElementById('taskDate').value = datePart;
-                document.getElementById('taskStartTime').value = startTimePart;
-                document.getElementById('taskEndTime').value = endTimePart;
-                document.getElementById('taskCategory').value = (task.category === 'Не указана') ? '' : task.category;
-                document.getElementById('taskPriority').value = task.priority;
-                document.getElementById('editTaskId').value = task.id;
-                document.getElementById('taskModal').style.display = 'flex';
-            }
-        } catch (error) { alert('Не удалось загрузить задачу'); }
-    }
-
-    function displayTasks(tasksList) {
-        const container = document.getElementById('tasks-container');
-        container.innerHTML = '';
-        for (const task of tasksList) {
-            const card = document.createElement('div');
-            card.className = 'task-card';
-            if (task.is_completed) card.classList.add('completed');
-            const startTime = extractTime(task.start_time);
-            const endTime = extractTime(task.end_time);
-            const timeRange = `${startTime} - ${endTime}`;
-            const priorityClass = getPriorityClass(task.priority);
-            let categoryHtml = '';
-            if (task.category !== 'Не указана') categoryHtml = `<span class="category">${escapeHtml(task.category)}</span>`;
-
-            card.innerHTML = `
-                <div class="task-header">
-                    <div class="task-title">${escapeHtml(task.name)}</div>
-                    <div class="task-actions">
-                        <button class="edit-task" data-id="${task.id}" title="Редактировать">✏️</button>
-                        <button class="delete-task" data-id="${task.id}" title="Удалить">🗑️</button>
-                        <input type="checkbox" class="custom-checkbox" ${task.is_completed ? 'checked' : ''}
-                               onchange="toggleTaskStatus(${task.id}, ${task.is_completed}, event)">
-                    </div>
-                </div>
-                <div class="task-details">
-                    <span class="time-range">${timeRange}</span>
-                    <span class="duration">длит. ${task.duration} мин</span>
-                    ${categoryHtml}
-                    <div style="flex:1"></div>
-                    <span class="${priorityClass}">${escapeHtml(task.priority)}</span>
-                </div>
-            `;
-            container.appendChild(card);
-        }
-        document.querySelectorAll('.edit-task').forEach(btn => {
-            const id = parseInt(btn.dataset.id);
-            btn.addEventListener('click', (e) => editTask(id, e));
-        });
-        document.querySelectorAll('.delete-task').forEach(btn => {
-            const id = parseInt(btn.dataset.id);
-            btn.addEventListener('click', (e) => deleteTask(id, e));
-        });
-    }
-
-    function updateStats(tasksList) {
-        const total = tasksList.length;
-        const completed = tasksList.filter(t => t.is_completed).length;
-        document.getElementById('total-count').innerText = total;
-        document.getElementById('completed-count').innerText = completed;
-        document.getElementById('pending-count').innerText = total - completed;
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        return text.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    async function saveTask(event) {
-        event.preventDefault();
-        const name = document.getElementById('taskName').value.trim();
-        const dateStr = document.getElementById('taskDate').value;
-        const startTimeStr = document.getElementById('taskStartTime').value;
-        const endTimeStr = document.getElementById('taskEndTime').value;
-        const category = document.getElementById('taskCategory').value.trim() || 'Не указана';
-        const priority = document.getElementById('taskPriority').value;
-        const editId = document.getElementById('editTaskId').value;
-
-        if (!name || !dateStr || !startTimeStr || !endTimeStr) {
-            alert('Заполните название, дату и время начала/конца');
-            return;
-        }
-        const startDateTime = `${dateStr}T${startTimeStr}:00`;
-        const endDateTime = `${dateStr}T${endTimeStr}:00`;
-
-        const payload = {
-            name: name,
-            start_time: startDateTime,
-            end_time: endDateTime,
-            category: category,
-            priority: priority,
-            is_completed: false
-        };
-
-        try {
-            let url = '/api/tasks', method = 'POST';
-            if (editId) {
-                url = `/api/tasks/${editId}`;
-                method = 'PUT';
-            }
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (response.ok) {
-                closeModal();
-                await loadTasks();
-                await loadAllTasksForCalendar();
-            } else {
-                const err = await response.json();
-                alert('Ошибка сохранения: ' + JSON.stringify(err));
-            }
-        } catch (error) {
-            alert('Ошибка соединения: ' + error.message);
-        }
-    }
-
-    function closeModal() {
-        document.getElementById('taskModal').style.display = 'none';
-        document.getElementById('taskForm').reset();
-        document.getElementById('editTaskId').value = '';
-        document.getElementById('modalTitle').innerText = 'Новая задача';
-        document.getElementById('taskDate').value = formatYMD(currentDate);
-    }
-
-    document.getElementById('openModalBtn').onclick = () => {
-        closeModal();
-        document.getElementById('taskModal').style.display = 'flex';
-    };
-    document.getElementById('closeModalBtn').onclick = closeModal;
-    window.onclick = (e) => { if (e.target === document.getElementById('taskModal')) closeModal(); };
-    document.getElementById('taskForm').onsubmit = saveTask;
-
-    loadAllTasksForCalendar().then(() => loadTasks());
-</script>
+<script src="/static/js/main.js" defer></script>
 </body>
 </html>
