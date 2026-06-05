@@ -42,6 +42,16 @@
                 <div class="no-events">В этот день нет событий</div>
             </div>
         </div>
+
+        <div class="deadlines-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 8px 0;">
+                <h3 style="color: white; font-size: 1rem;">Дедлайны</h3>
+                <button id="addDeadlineBtn" class="add-deadline-btn">+ Добавить дедлайн</button>
+            </div>
+            <div id="deadlinesList" class="deadlines-list">
+                <div class="no-deadlines">Нет активных дедлайнов</div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -108,6 +118,28 @@
             </div>
             <div class="modal-buttons">
                 <button type="button" class="btn-cancel" id="closeEventModalBtn">Отмена</button>
+                <button type="submit" class="btn-save">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модалка для дедлайнов -->
+<div id="deadlineModal" class="modal">
+    <div class="modal-content">
+        <h2 id="deadlineModalTitle">Новый дедлайн</h2>
+        <form id="deadlineForm">
+            <input type="hidden" id="editDeadlineId" value="">
+            <div class="form-group">
+                <label>Название *</label>
+                <input type="text" id="deadlineName" required>
+            </div>
+            <div class="form-group">
+                <label>Дата и время сгорания *</label>
+                <input type="datetime-local" id="deadlineDateTime" required>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-cancel" id="closeDeadlineModalBtn">Отмена</button>
                 <button type="submit" class="btn-save">Сохранить</button>
             </div>
         </form>

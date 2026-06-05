@@ -25,7 +25,7 @@ body {
     .empty-area { display: none; }
 }
 /* Единый стиль всех кнопок */
-button, .add-task-btn, .add-event-btn, .calendar-nav button {
+button, .add-task-btn, .add-event-btn, .calendar-nav button, .add-deadline-btn {
     background: white;
     border: none;
     padding: 6px 14px;
@@ -37,7 +37,7 @@ button, .add-task-btn, .add-event-btn, .calendar-nav button {
     transition: all 0.2s ease;
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-button:hover, .add-task-btn:hover, .add-event-btn:hover, .calendar-nav button:hover {
+button:hover, .add-task-btn:hover, .add-event-btn:hover, .calendar-nav button:hover, .add-deadline-btn:hover {
     transform: scale(1.02);
     background: #f0f0f0;
 }
@@ -135,7 +135,41 @@ h1 { text-align: left; color: white; margin-bottom: 5px; font-size: 1.8em; }
 .stats .total { color: #667eea; font-weight: bold; }
 .stats .completed { color: #27ae60; font-weight: bold; }
 .stats .pending { color: #e67e22; font-weight: bold; }
-.tasks-list { display: flex; flex-direction: column; gap: 10px; }
+
+.tasks-list {
+    direction: rtl;
+    overflow-y: auto;
+    max-height: 460px;
+    padding: 0 5px 0 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.3) transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tasks-list .task-card {
+    direction: ltr;
+    margin: 0;
+    width: 100%;
+}
+
+/* Webkit-стилизация */
+.tasks-list::-webkit-scrollbar {
+    width: 6px;
+    background-color: transparent;
+}
+.tasks-list::-webkit-scrollbar-thumb {
+    background-color: rgba(255,255,255,0.3);
+    border-radius: 10px;
+}
+.tasks-list::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255,255,255,0.5);
+}
+.tasks-list::-webkit-scrollbar-button {
+    display: none;
+}
+
 .task-card {
     background: white; border-radius: 12px; padding: 10px 12px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: all 0.2s ease;
@@ -167,22 +201,11 @@ h1 { text-align: left; color: white; margin-bottom: 5px; font-size: 1.8em; }
 .priority-high { background: #e74c3c; color: white; }
 .priority-very-high { background: #2c3e50; color: white; }
 
-/* Стили для событий (единообразно с задачами) */
+/* Стили для событий */
 .events-section {
     margin-top: 15px;
     border-top: 1px solid rgba(255,255,255,0.3);
     padding-top: 10px;
-}
-.add-event-btn {
-    background: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 30px;
-    font-weight: bold;
-    font-size: 0.9rem;
-    color: #667eea;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 .events-list {
     display: flex;
@@ -232,6 +255,91 @@ h1 { text-align: left; color: white; margin-bottom: 5px; font-size: 1.8em; }
     font-size: 0.85rem;
 }
 
+/* Дедлайны */
+.deadlines-section {
+    margin-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.3);
+    padding-top: 10px;
+}
+.deadlines-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+.deadline-item {
+    background: white;
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.deadline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.deadline-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+.deadline-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-left: 8px;
+    padding: 4px;
+    border-radius: 6px;
+    color: #555;
+}
+.deadline-fuse {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.fuse-bar {
+    flex: 1;
+    height: 8px;
+    background-color: #ecf0f1;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.fuse-progress {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #f39c12, #e74c3c);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.bomb-icon {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+.deadline-time {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+    margin-top: 4px;
+}
+.completed-deadline {
+    opacity: 0.6;
+    background: #e0e0e0;
+}
+.completed-deadline .deadline-name {
+    text-decoration: line-through;
+    color: #666;
+}
+.no-deadlines {
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    color: white;
+    font-size: 0.85rem;
+}
+
 /* Модальные окна */
 .modal {
     display: none; position: fixed; z-index: 1000; left: 0; top: 0;
@@ -259,4 +367,28 @@ h1 { text-align: left; color: white; margin-bottom: 5px; font-size: 1.8em; }
     .time-range { font-size: 0.8rem; }
     .form-row { flex-direction: column; gap: 8px; }
     .stats span { margin-right: 8px; font-size: 0.8rem; }
+}
+
+.deadline-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    margin-left: 6px;
+    transform: scale(1.1);
+}
+.deadline-fuse .fuse-progress.completed-fuse {
+    background: #667eea;
+    width: 100% !important;
+}
+.deadline-expired .deadline-name {
+    color: #e67e22 !important;
+}
+.deadline-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #e67e22;
+    border-radius: 50%;
+    position: absolute;
+    top: 4px;
+    right: 4px;
 }

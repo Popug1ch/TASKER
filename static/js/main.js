@@ -98,12 +98,16 @@ function renderCalendar() {
         const hasRed = prioritiesSet.has('Высокая');
         const hasBlack = prioritiesSet.has('Очень высокая');
         const hasEvent = allEventsForCalendar.some(ev => ev.event_date === ymd);
+        const hasDeadline = allDeadlines.some(d =>
+            !d.is_completed && formatYMD(new Date(d.deadline_time)) === ymd
+        );
 
         const dayCard = document.createElement('div');
         dayCard.className = 'day-card';
         if (formatYMD(currentDate) === ymd) dayCard.classList.add('active');
         dayCard.innerHTML = `
             ${hasEvent ? '<span class="event-dot"></span>' : ''}
+            ${hasDeadline ? '<span class="deadline-dot"></span>' : ''}
             <div class="day-name">${dayNames[i]}</div>
             <div class="day-number">${dayDate.getDate()}</div>
             <div class="priority-dots">
@@ -484,6 +488,192 @@ function closeModal() {
     document.getElementById('taskDate').value = formatYMD(currentDate);
 }
 
+// ---- Глобальные переменные для дедлайнов ----
+let allDeadlines = [];
+
+// ---- Загрузка дедлайнов (всех, но с сортировкой) ----
+async function loadDeadlines() {
+    try {
+        const res = await fetch('/api/deadlines/all');  // или /active? нужно видеть и выполненные для сортировки
+        if (!res.ok) throw new Error();
+        let deadlines = await res.json();
+        // сортируем: сначала невыполненные, потом выполненные
+        deadlines.sort((a, b) => a.is_completed - b.is_completed);
+        allDeadlines = deadlines;
+        renderDeadlines();
+        renderCalendar();  // обновим оранжевые точки
+    } catch (error) {
+        console.error('Ошибка загрузки дедлайнов', error);
+    }
+}
+
+// ---- Отрисовка дедлайнов с фитильком ----
+function renderDeadlines() {
+    const container = document.getElementById('deadlinesList');
+    if (!allDeadlines.length) {
+        container.innerHTML = '<div class="no-deadlines">Нет активных дедлайнов</div>';
+        return;
+    }
+    const now = new Date();
+    container.innerHTML = allDeadlines.map(deadline => {
+        const created = new Date(deadline.created_at);
+        const deadlineTime = new Date(deadline.deadline_time);
+        let percentRemaining = 0;
+        let isExpired = false;
+        let fuseClass = '';
+        if (!deadline.is_completed) {
+    if (now >= deadlineTime) {
+        isExpired = true;
+        percentRemaining = 0;
+        fuseClass = '';
+    } else if (deadlineTime > created) {
+        const total = deadlineTime - created;
+        const elapsed = now - created;
+        let remaining = (total - elapsed) / total * 100;
+        remaining = Math.min(100, Math.max(0, remaining));
+        percentRemaining = Math.floor(remaining);
+    }
+} else {
+    percentRemaining = 100;
+    fuseClass = 'completed-fuse';
+}
+        const bombIcon = isExpired ? '💥' : '💣';
+        const expiredClass = isExpired ? 'deadline-expired' : '';
+        return `
+            <div class="deadline-item ${deadline.is_completed ? 'completed-deadline' : ''} ${expiredClass}"
+                 data-id="${deadline.id}"
+                 data-created="${deadline.created_at}"
+                 data-deadline="${deadline.deadline_time}">
+                <div class="deadline-header">
+                    <span class="deadline-name">${escapeHtml(deadline.name)}</span>
+                    <div class="deadline-actions">
+                        <button class="edit-deadline" data-id="${deadline.id}" title="Редактировать">✏️</button>
+                        <button class="delete-deadline" data-id="${deadline.id}" title="Удалить">🗑️</button>
+                        <input type="checkbox" class="deadline-checkbox" ${deadline.is_completed ? 'checked' : ''}
+                               data-id="${deadline.id}" onchange="toggleDeadlineStatus(this)">
+                    </div>
+                </div>
+                <div class="deadline-fuse">
+                    <span class="bomb-icon">${bombIcon}</span>
+                    <div class="fuse-bar">
+                        <div class="fuse-progress ${fuseClass}" style="width: ${percentRemaining}%;"></div>
+                    </div>
+                </div>
+                <div class="deadline-time">
+                    Сгорает: ${deadlineTime.toLocaleString('ru-RU')}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    attachDeadlineHandlers();
+}
+
+async function toggleDeadlineStatus(checkbox) {
+    const deadlineId = parseInt(checkbox.dataset.id);
+    const isCompleted = checkbox.checked;
+    await fetch(`/api/deadlines/${deadlineId}/status?is_completed=${isCompleted}`, { method: 'PUT' });
+    await loadDeadlines();
+}
+
+function attachDeadlineHandlers() {
+    document.querySelectorAll('.edit-deadline').forEach(btn => {
+        btn.onclick = () => openDeadlineModal(parseInt(btn.dataset.id));
+    });
+    document.querySelectorAll('.delete-deadline').forEach(btn => {
+        btn.onclick = async () => {
+            if (confirm('Удалить дедлайн?')) {
+                const id = parseInt(btn.dataset.id);
+                await fetch(`/api/deadlines/${id}`, { method: 'DELETE' });
+                await loadDeadlines();
+            }
+        };
+    });
+}
+
+// ---- Таймер для плавного обновления ширины фитилька ----
+function startDeadlineTimer() {
+    setInterval(() => {
+        document.querySelectorAll('.deadline-item:not(.completed-deadline)').forEach(item => {
+            const created = new Date(item.dataset.created);
+            const deadline = new Date(item.dataset.deadline);
+            const now = new Date();
+            let percent = 0;
+            if (deadline > created) {
+                const total = deadline - created;
+                const elapsed = now - created;
+                let remaining = (total - elapsed) / total * 100;
+                remaining = Math.min(100, Math.max(0, remaining));
+                percent = Math.floor(remaining);
+            }
+            const fuseBar = item.querySelector('.fuse-progress');
+            if (fuseBar) fuseBar.style.width = `${percent}%`;
+        });
+    }, 1000);
+}
+
+// ---- Модалка для дедлайнов ----
+function openDeadlineModal(deadlineId = null) {
+    const modal = document.getElementById('deadlineModal');
+    const form = document.getElementById('deadlineForm');
+    form.reset();
+    document.getElementById('editDeadlineId').value = '';
+    document.getElementById('deadlineModalTitle').innerText = 'Новый дедлайн';
+    if (deadlineId) {
+        document.getElementById('deadlineModalTitle').innerText = 'Редактировать дедлайн';
+        fetch(`/api/deadlines/all`)
+            .then(res => res.json())
+            .then(deadlines => {
+                const dl = deadlines.find(d => d.id === deadlineId);
+                if (dl) {
+                    document.getElementById('deadlineName').value = dl.name;
+                    document.getElementById('deadlineDateTime').value = dl.deadline_time.slice(0,16);
+                    document.getElementById('editDeadlineId').value = dl.id;
+                }
+            });
+    }
+    modal.style.display = 'flex';
+}
+
+async function saveDeadline(event) {
+    event.preventDefault();
+    const name = document.getElementById('deadlineName').value.trim();
+    const deadlineDateTime = document.getElementById('deadlineDateTime').value;
+    const editId = document.getElementById('editDeadlineId').value;
+    if (!name || !deadlineDateTime) {
+        alert('Заполните название и дату/время');
+        return;
+    }
+    const payload = { name, deadline_time: deadlineDateTime, is_completed: false };
+    try {
+        let url = '/api/deadlines', method = 'POST';
+        if (editId) {
+            url = `/api/deadlines/${editId}`;
+            method = 'PUT';
+        }
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            closeDeadlineModal();
+            await loadDeadlines();
+        } else {
+            const err = await res.json();
+            alert('Ошибка: ' + (err.detail || 'Не удалось сохранить дедлайн'));
+        }
+    } catch (error) {
+        alert('Ошибка соединения: ' + error.message);
+    }
+}
+
+function closeDeadlineModal() {
+    document.getElementById('deadlineModal').style.display = 'none';
+    document.getElementById('deadlineForm').reset();
+    document.getElementById('editDeadlineId').value = '';
+}
+
 // ---- Инициализация ----
 document.getElementById('openModalBtn').onclick = () => {
     closeModal();
@@ -496,11 +686,15 @@ document.getElementById('taskForm').onsubmit = saveTask;
 document.getElementById('prevWeekBtn').onclick = prevWeek;
 document.getElementById('nextWeekBtn').onclick = nextWeek;
 
-// События
 document.getElementById('addEventBtn').onclick = () => openEventModal();
 document.getElementById('closeEventModalBtn').onclick = closeEventModal;
 window.onclick = (e) => { if (e.target === document.getElementById('eventModal')) closeEventModal(); };
 document.getElementById('eventForm').onsubmit = saveEvent;
+
+document.getElementById('addDeadlineBtn').onclick = () => openDeadlineModal();
+document.getElementById('closeDeadlineModalBtn').onclick = closeDeadlineModal;
+window.onclick = (e) => { if (e.target === document.getElementById('deadlineModal')) closeDeadlineModal(); };
+document.getElementById('deadlineForm').onsubmit = saveDeadline;
 
 // Запуск
 loadWeekInfo().then(() => {
@@ -509,6 +703,8 @@ loadWeekInfo().then(() => {
             if (!currentDate) currentDate = new Date(displayedWeekStart);
             loadTasksForCurrentDate();
             loadEventsForDate(currentDate);
+            loadDeadlines();
+            startDeadlineTimer();
         });
     });
 });

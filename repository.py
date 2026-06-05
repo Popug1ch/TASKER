@@ -15,7 +15,7 @@ class TaskRepository:
     async def add_one(cls, data: STaskAdd, session: AsyncSession) -> TasksModel:
         duration = int((data.end_time - data.start_time).total_seconds() // 60)
         task_dict = data.model_dump()
-        task = TasksModel(**task_dict, duration=duration, id=None)
+        task = TasksModel(**task_dict, duration=duration)
         session.add(task)
         await session.commit()
         await session.refresh(task)
@@ -215,53 +215,77 @@ class EventRepository:
 class DeadlineRepository:
     @classmethod
     async def add_one(cls, data: DeadlineAdd, session: AsyncSession) -> DeadlineModel:
-        deadline = DeadlineModel(**data.model_dump())
+        deadline = DeadlineModel(
+            name=data.name,
+            deadline_time=data.deadline_time,
+            created_at=datetime.now(),
+            is_completed=False
+        )
         session.add(deadline)
         await session.commit()
         await session.refresh(deadline)
         return deadline
 
     @classmethod
-    async def find_by_date(
-        cls, session: AsyncSession, target_time: datetime
-    ) -> list[DeadlineModel]:
-        stmt = select(DeadlineModel).where(DeadlineModel.deadline_time == target_time)
+    async def find_by_date(cls, session: AsyncSession, target_date: datetime) -> list[DeadlineModel]:
+        # ищем дедлайны, у которых deadline_time приходится на тот же день (без учёта времени)
+        start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = start_of_day.replace(hour=23, minute=59, second=59)
+        stmt = select(DeadlineModel).where(
+            DeadlineModel.deadline_time >= start_of_day,
+            DeadlineModel.deadline_time <= end_of_day
+        )
         result = await session.execute(stmt)
         return result.scalars().all()
 
     @classmethod
     async def find_all(cls, session: AsyncSession) -> list[DeadlineModel]:
-        stmt = select(DeadlineModel)
+        stmt = select(DeadlineModel).order_by(DeadlineModel.deadline_time.asc())
         result = await session.execute(stmt)
         return result.scalars().all()
 
     @classmethod
-    async def update_deadline(
-        cls, deadline_id: int, data: DeadlineUpdate, session: AsyncSession
-    ) -> DeadlineModel | None:
-        stmt = (
-            update(DeadlineModel)
-            .where(DeadlineModel.id == deadline_id)
-            .values(**data.model_dump())
-            .returning(DeadlineModel)
-        )
+    async def find_active(cls, session: AsyncSession) -> list[DeadlineModel]:
+        stmt = select(DeadlineModel).where(DeadlineModel.is_completed == False).order_by(DeadlineModel.deadline_time.asc())
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    @classmethod
+    async def update_deadline(cls, deadline_id: int, data: DeadlineUpdate, session: AsyncSession) -> DeadlineModel | None:
+        update_data = data.model_dump()
+        # created_at не обновляем
+        stmt = update(DeadlineModel).where(DeadlineModel.id == deadline_id).values(**update_data).returning(DeadlineModel)
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def update_status(cls, deadline_id: int, is_completed: bool, session: AsyncSession) -> DeadlineModel | None:
+        stmt = update(DeadlineModel).where(DeadlineModel.id == deadline_id).values(is_completed=is_completed).returning(DeadlineModel)
         result = await session.execute(stmt)
         await session.commit()
         return result.scalar_one_or_none()
 
     @classmethod
     async def delete_deadline(cls, deadline_id: int, session: AsyncSession) -> bool:
-        stmt = delete(DeadlineModel).where(EventModel.id == deadline_id)
+        stmt = delete(DeadlineModel).where(DeadlineModel.id == deadline_id)
         result = await session.execute(stmt)
         await session.commit()
         return result.rowcount > 0
 
     @classmethod
-    async def count_by_date(cls, session: AsyncSession, target_time: datetime) -> int:
-        stmt = (
-            select(func.count())
-            .select_from(DeadlineModel)
-            .where(DeadlineModel.deadline_time == target_time)
+    async def count_by_date(cls, session: AsyncSession, target_date: datetime) -> int:
+        start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = start_of_day.replace(hour=23, minute=59, second=59)
+        stmt = select(func.count()).select_from(DeadlineModel).where(
+            DeadlineModel.deadline_time >= start_of_day,
+            DeadlineModel.deadline_time <= end_of_day
         )
+        result = await session.execute(stmt)
+        return result.scalar()
+
+    @classmethod
+    async def count_active(cls, session: AsyncSession) -> int:
+        stmt = select(func.count()).select_from(DeadlineModel).where(DeadlineModel.is_completed == False)
         result = await session.execute(stmt)
         return result.scalar()
