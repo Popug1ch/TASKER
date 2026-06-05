@@ -6,6 +6,8 @@ from models.settings import SettingsModel
 from schemas.task import STaskAdd, STaskUpdate
 from models.events import EventModel
 from schemas.event import EventAdd, EventUpdate
+from models.deadline import DeadlineModel
+from schemas.deadline import DeadlineUpdate, DeadlineAdd
 
 
 class TaskRepository:
@@ -205,6 +207,61 @@ class EventRepository:
             select(func.count())
             .select_from(EventModel)
             .where(EventModel.event_date == target_date)
+        )
+        result = await session.execute(stmt)
+        return result.scalar()
+
+
+class DeadlineRepository:
+    @classmethod
+    async def add_one(cls, data: DeadlineAdd, session: AsyncSession) -> DeadlineModel:
+        deadline = DeadlineModel(**data.model_dump())
+        session.add(deadline)
+        await session.commit()
+        await session.refresh(deadline)
+        return deadline
+
+    @classmethod
+    async def find_by_date(
+        cls, session: AsyncSession, target_time: datetime
+    ) -> list[DeadlineModel]:
+        stmt = select(DeadlineModel).where(DeadlineModel.deadline_time == target_time)
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    @classmethod
+    async def find_all(cls, session: AsyncSession) -> list[DeadlineModel]:
+        stmt = select(DeadlineModel)
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    @classmethod
+    async def update_deadline(
+        cls, deadline_id: int, data: DeadlineUpdate, session: AsyncSession
+    ) -> DeadlineModel | None:
+        stmt = (
+            update(DeadlineModel)
+            .where(DeadlineModel.id == deadline_id)
+            .values(**data.model_dump())
+            .returning(DeadlineModel)
+        )
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def delete_deadline(cls, deadline_id: int, session: AsyncSession) -> bool:
+        stmt = delete(DeadlineModel).where(EventModel.id == deadline_id)
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.rowcount > 0
+
+    @classmethod
+    async def count_by_date(cls, session: AsyncSession, target_time: datetime) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(DeadlineModel)
+            .where(DeadlineModel.deadline_time == target_time)
         )
         result = await session.execute(stmt)
         return result.scalar()

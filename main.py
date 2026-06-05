@@ -6,6 +6,7 @@ import os
 from database import engine, Model, new_session
 from routers.task import router as tasks_router
 from routers.event import router as events_router
+from routers.deadline import router as deadlines_router
 from repository import TaskRepository
 from datetime import datetime, timedelta
 from fastapi.staticfiles import StaticFiles
@@ -31,8 +32,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(tasks_router)
 app.include_router(events_router)
+app.include_router(deadlines_router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def get_favicon():
