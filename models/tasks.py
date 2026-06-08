@@ -7,6 +7,7 @@ class TasksModel(Model):
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    user_id: Mapped[int] = mapped_column(index=True)
     name: Mapped[str]
     start_time: Mapped[datetime]
     end_time: Mapped[datetime]

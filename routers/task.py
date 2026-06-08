@@ -1,16 +1,17 @@
 from typing import Optional
 from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from database import SessionDep
 from schemas.task import STask, STaskAdd, STaskUpdate
 from repository import TaskRepository
-
+from dependencies import get_current_user
+from models.user import UserModel
 router = APIRouter(prefix="/api/tasks", tags=["Задачи"])
 
 
 @router.post("", response_model=STask, status_code=201)
-async def create_task(task: STaskAdd, session: SessionDep):
-    return await TaskRepository.add_one(task, session)
+async def create_task(task: STaskAdd, session: SessionDep, current_user: UserModel = Depends(get_current_user)):
+    return await TaskRepository.add_one(task, session, current_user.id)
 
 
 @router.get("", response_model=list[STask])
