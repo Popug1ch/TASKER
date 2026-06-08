@@ -10,7 +10,18 @@
 <body>
 <div class="three-columns">
     <div class="tasks-panel">
-        <h1>Мои задачи</h1>
+        <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+            <div id="profileIcon" class="profile-initial">A</div>
+            <h1>Мои задачи</h1>
+            <!-- Выпадающее меню профиля -->
+            <div id="profileDropdown" class="profile-dropdown" style="display: none;">
+                <div class="dropdown-arrow"></div>
+                <div class="dropdown-content">
+                    <div id="dropdownUsername" class="dropdown-username">Загрузка...</div>
+                    <button id="dropdownLogoutBtn" class="dropdown-logout-btn">Выйти</button>
+                </div>
+            </div>
+        </div>
         <div class="subtitle">Управляй своим временем</div>
         <div class="top-bar">
             <div class="stats" id="stats">

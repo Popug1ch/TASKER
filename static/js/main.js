@@ -705,6 +705,58 @@ loadWeekInfo().then(() => {
             loadEventsForDate(currentDate);
             loadDeadlines();
             startDeadlineTimer();
+            loadProfile();
         });
     });
 });
+
+
+
+// ---- Профиль и выпадающее меню ----
+const profileIcon = document.getElementById('profileIcon');
+const profileDropdown = document.getElementById('profileDropdown');
+const dropdownUsername = document.getElementById('dropdownUsername');
+const dropdownLogoutBtn = document.getElementById('dropdownLogoutBtn');
+
+// Загрузка профиля и обновление иконки
+async function loadProfile() {
+    try {
+        const res = await fetch('/auth/me');
+        if (!res.ok) {
+            if (res.status === 401) window.location.href = '/login';
+            return;
+        }
+        const user = await res.json();
+        // Обновляем букву в кружке
+        const firstLetter = user.username.charAt(0).toUpperCase();
+        profileIcon.textContent = firstLetter;
+        // Обновляем имя в выпадающем меню
+        dropdownUsername.textContent = user.username;
+    } catch (error) {
+        console.error('Ошибка загрузки профиля', error);
+    }
+}
+
+// Показ/скрытие выпадающего меню
+if (profileIcon) {
+    profileIcon.onclick = (e) => {
+        e.stopPropagation();
+        const isVisible = profileDropdown.style.display === 'block';
+        profileDropdown.style.display = isVisible ? 'none' : 'block';
+    };
+}
+
+// Закрытие при клике вне меню
+document.addEventListener('click', (e) => {
+    if (!profileIcon.contains(e.target) && !profileDropdown.contains(e.target)) {
+        profileDropdown.style.display = 'none';
+    }
+});
+
+// Выход из профиля
+if (dropdownLogoutBtn) {
+    dropdownLogoutBtn.onclick = async () => {
+        await fetch('/auth/logout', { method: 'POST' });
+        window.location.href = '/login';
+    };
+}

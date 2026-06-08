@@ -1,15 +1,20 @@
 import uvicorn
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 import os
 from database import engine, Model, new_session
+
 from routers.task import router as tasks_router
 from routers.event import router as events_router
 from routers.deadline import router as deadlines_router
-from repository import TaskRepository
+from routers.auth import router as auth_router
+
+from repository import TaskRepository, SessionRepository, UserRepository
 from datetime import datetime, timedelta
 from fastapi.staticfiles import StaticFiles
+
+from dependencies import get_current_user
 
 
 @asynccontextmanager
@@ -33,6 +38,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(tasks_router)
 app.include_router(events_router)
 app.include_router(deadlines_router)
+app.include_router(auth_router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -44,10 +50,29 @@ async def get_favicon():
 
 
 @app.get("/", response_class=HTMLResponse)
-async def get_html_page():
+async def get_html_page(request: Request):
+    token = request.cookies.get("session_token")
+    if not token:
+        return RedirectResponse(url="/login")
+    async with new_session() as session:
+        user = await SessionRepository.get_user_by_token(session, token)
+        if not user:
+            return RedirectResponse(url="/login")
     with open("templates/index.html", "r", encoding="utf-8") as file:
         html_content = file.read()
     return HTMLResponse(content=html_content)
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    with open("templates/login.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page():
+    with open("templates/register.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 
 if __name__ == "__main__":

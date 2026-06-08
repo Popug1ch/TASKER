@@ -13,7 +13,7 @@ from models.session import SessionModel
 import secrets
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # ---------- TaskRepository ----------
 class TaskRepository:
@@ -312,7 +312,12 @@ class UserRepository:
     @classmethod
     async def create(cls, session: AsyncSession, username: str, email: str, password: str) -> UserModel:
         hashed = pwd_context.hash(password)
-        user = UserModel(username=username, email=email, hashed_password=hashed)
+        user = UserModel(
+            username=username,
+            email=email,
+            hashed_password=hashed,
+            created_at=datetime.now()
+        )
         session.add(user)
         await session.commit()
         await session.refresh(user)
@@ -327,7 +332,12 @@ class SessionRepository:
     async def create(cls, session: AsyncSession, user_id: int, expires_days: int = 30) -> str:
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now() + timedelta(days=expires_days)
-        sess = SessionModel(user_id=user_id, token=token, expires_at=expires_at)
+        sess = SessionModel(
+            user_id=user_id,
+            token=token,
+            expires_at=expires_at,
+            created_at=datetime.now()
+        )
         session.add(sess)
         await session.commit()
         return token
