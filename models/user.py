@@ -9,4 +9,5 @@ class UserModel(Model):
     username: Mapped[str] = mapped_column(unique=True)
     email: Mapped[str] = mapped_column(unique=True)
     hashed_password: Mapped[str]
+    telegram_id: Mapped[int] = mapped_column(nullable=True, unique=True, default=None)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
