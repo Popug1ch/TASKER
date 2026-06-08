@@ -12,7 +12,8 @@ from bot.loader import bot
 from bot.utils.db_helpers import get_user_by_telegram_id
 from bot.keyboards.main_menu import get_main_menu_keyboard
 
-@bot.message_handler(commands=['start', 'help'])
+
+@bot.message_handler(commands=["start", "help"])
 def start_command(message: Message):
     user = get_user_by_telegram_id(message.chat.id)
     if user:
@@ -27,7 +28,12 @@ def start_command(message: Message):
             "/help – показать это сообщение\n\n"
             "👇 Или используйте кнопки ниже:"
         )
-        bot.send_message(message.chat.id, text, parse_mode="Markdown", reply_markup=get_main_menu_keyboard())
+        bot.send_message(
+            message.chat.id,
+            text,
+            parse_mode="Markdown",
+            reply_markup=get_main_menu_keyboard(),
+        )
     else:
         text = (
             "👋 Добро пожаловать в Таскер-бот!\n\n"
@@ -42,7 +48,8 @@ def start_command(message: Message):
         )
         bot.send_message(message.chat.id, text, parse_mode="Markdown")
 
-@bot.message_handler(commands=['help'])
+
+@bot.message_handler(commands=["help"])
 def help_command(message: Message):
     help_text = (
         "📖 *Справка по командам:*\n\n"

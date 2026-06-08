@@ -4,7 +4,8 @@ from telebot.types import Message
 from bot.loader import bot
 from bot.utils.db_helpers import get_user_by_telegram_id, get_upcoming_deadlines
 
-@bot.message_handler(commands=['deadlines'])
+
+@bot.message_handler(commands=["deadlines"])
 def show_deadlines(message: Message):
     user = get_user_by_telegram_id(message.chat.id)
     if not user:

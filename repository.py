@@ -15,10 +15,13 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
+
 # ---------- TaskRepository ----------
 class TaskRepository:
     @classmethod
-    async def add_one(cls, data: STaskAdd, session: AsyncSession, user_id: int) -> TasksModel:
+    async def add_one(
+        cls, data: STaskAdd, session: AsyncSession, user_id: int
+    ) -> TasksModel:
         duration = int((data.end_time - data.start_time).total_seconds() // 60)
         task_dict = data.model_dump()
         task = TasksModel(**task_dict, duration=duration, user_id=user_id)
@@ -29,17 +32,25 @@ class TaskRepository:
 
     @classmethod
     async def find_all(cls, session: AsyncSession, user_id: int) -> list[TasksModel]:
-        query = select(TasksModel).where(TasksModel.user_id == user_id).order_by(
-            TasksModel.is_completed.asc(),
-            TasksModel.start_time.asc(),
-            TasksModel.duration.asc(),
+        query = (
+            select(TasksModel)
+            .where(TasksModel.user_id == user_id)
+            .order_by(
+                TasksModel.is_completed.asc(),
+                TasksModel.start_time.asc(),
+                TasksModel.duration.asc(),
+            )
         )
         result = await session.execute(query)
         return result.scalars().all()
 
     @classmethod
     async def find_in_range(
-        cls, session: AsyncSession, start_datetime: datetime, end_datetime: datetime, user_id: int
+        cls,
+        session: AsyncSession,
+        start_datetime: datetime,
+        end_datetime: datetime,
+        user_id: int,
     ) -> list[TasksModel]:
         query = (
             select(TasksModel)
@@ -89,8 +100,12 @@ class TaskRepository:
         return result.scalar_one_or_none()
 
     @classmethod
-    async def delete_task(cls, task_id: int, session: AsyncSession, user_id: int) -> bool:
-        stmt = delete(TasksModel).where(TasksModel.id == task_id, TasksModel.user_id == user_id)
+    async def delete_task(
+        cls, task_id: int, session: AsyncSession, user_id: int
+    ) -> bool:
+        stmt = delete(TasksModel).where(
+            TasksModel.id == task_id, TasksModel.user_id == user_id
+        )
         result = await session.execute(stmt)
         await session.commit()
         return result.rowcount > 0
@@ -116,7 +131,11 @@ class TaskRepository:
 
     @classmethod
     async def set_current_week_start(cls, session: AsyncSession, new_start: datetime):
-        stmt = update(SettingsModel).where(SettingsModel.id == 1).values(current_week_start=new_start.isoformat())
+        stmt = (
+            update(SettingsModel)
+            .where(SettingsModel.id == 1)
+            .values(current_week_start=new_start.isoformat())
+        )
         await session.execute(stmt)
         await session.commit()
 
@@ -148,10 +167,13 @@ class TaskRepository:
         await cls.set_current_week_start(session, next_start)
         await session.commit()
 
+
 # ---------- EventRepository ----------
 class EventRepository:
     @classmethod
-    async def add_one(cls, data: EventAdd, session: AsyncSession, user_id: int) -> EventModel:
+    async def add_one(
+        cls, data: EventAdd, session: AsyncSession, user_id: int
+    ) -> EventModel:
         event = EventModel(**data.model_dump(), user_id=user_id)
         session.add(event)
         await session.commit()
@@ -159,8 +181,12 @@ class EventRepository:
         return event
 
     @classmethod
-    async def find_by_date(cls, session: AsyncSession, target_date: date, user_id: int) -> list[EventModel]:
-        stmt = select(EventModel).where(EventModel.event_date == target_date, EventModel.user_id == user_id)
+    async def find_by_date(
+        cls, session: AsyncSession, target_date: date, user_id: int
+    ) -> list[EventModel]:
+        stmt = select(EventModel).where(
+            EventModel.event_date == target_date, EventModel.user_id == user_id
+        )
         result = await session.execute(stmt)
         return result.scalars().all()
 
@@ -171,7 +197,9 @@ class EventRepository:
         return result.scalars().all()
 
     @classmethod
-    async def update_event(cls, event_id: int, data: EventUpdate, session: AsyncSession, user_id: int) -> EventModel | None:
+    async def update_event(
+        cls, event_id: int, data: EventUpdate, session: AsyncSession, user_id: int
+    ) -> EventModel | None:
         stmt = (
             update(EventModel)
             .where(EventModel.id == event_id, EventModel.user_id == user_id)
@@ -183,14 +211,20 @@ class EventRepository:
         return result.scalar_one_or_none()
 
     @classmethod
-    async def delete_event(cls, event_id: int, session: AsyncSession, user_id: int) -> bool:
-        stmt = delete(EventModel).where(EventModel.id == event_id, EventModel.user_id == user_id)
+    async def delete_event(
+        cls, event_id: int, session: AsyncSession, user_id: int
+    ) -> bool:
+        stmt = delete(EventModel).where(
+            EventModel.id == event_id, EventModel.user_id == user_id
+        )
         result = await session.execute(stmt)
         await session.commit()
         return result.rowcount > 0
 
     @classmethod
-    async def count_by_date(cls, session: AsyncSession, target_date: date, user_id: int) -> int:
+    async def count_by_date(
+        cls, session: AsyncSession, target_date: date, user_id: int
+    ) -> int:
         stmt = (
             select(func.count())
             .select_from(EventModel)
@@ -199,10 +233,13 @@ class EventRepository:
         result = await session.execute(stmt)
         return result.scalar()
 
+
 # ---------- DeadlineRepository ----------
 class DeadlineRepository:
     @classmethod
-    async def add_one(cls, data: DeadlineAdd, session: AsyncSession, user_id: int) -> DeadlineModel:
+    async def add_one(
+        cls, data: DeadlineAdd, session: AsyncSession, user_id: int
+    ) -> DeadlineModel:
         deadline = DeadlineModel(
             name=data.name,
             deadline_time=data.deadline_time,
@@ -216,7 +253,9 @@ class DeadlineRepository:
         return deadline
 
     @classmethod
-    async def find_by_date(cls, session: AsyncSession, target_date: datetime, user_id: int) -> list[DeadlineModel]:
+    async def find_by_date(
+        cls, session: AsyncSession, target_date: datetime, user_id: int
+    ) -> list[DeadlineModel]:
         start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_of_day = start_of_day.replace(hour=23, minute=59, second=59)
         stmt = select(DeadlineModel).where(
@@ -229,22 +268,32 @@ class DeadlineRepository:
 
     @classmethod
     async def find_all(cls, session: AsyncSession, user_id: int) -> list[DeadlineModel]:
-        stmt = select(DeadlineModel).where(DeadlineModel.user_id == user_id).order_by(DeadlineModel.deadline_time.asc())
-        result = await session.execute(stmt)
-        return result.scalars().all()
-
-    @classmethod
-    async def find_active(cls, session: AsyncSession, user_id: int) -> list[DeadlineModel]:
         stmt = (
             select(DeadlineModel)
-            .where(DeadlineModel.user_id == user_id, DeadlineModel.is_completed == False)
+            .where(DeadlineModel.user_id == user_id)
             .order_by(DeadlineModel.deadline_time.asc())
         )
         result = await session.execute(stmt)
         return result.scalars().all()
 
     @classmethod
-    async def update_deadline(cls, deadline_id: int, data: DeadlineUpdate, session: AsyncSession, user_id: int) -> DeadlineModel | None:
+    async def find_active(
+        cls, session: AsyncSession, user_id: int
+    ) -> list[DeadlineModel]:
+        stmt = (
+            select(DeadlineModel)
+            .where(
+                DeadlineModel.user_id == user_id, DeadlineModel.is_completed == False
+            )
+            .order_by(DeadlineModel.deadline_time.asc())
+        )
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    @classmethod
+    async def update_deadline(
+        cls, deadline_id: int, data: DeadlineUpdate, session: AsyncSession, user_id: int
+    ) -> DeadlineModel | None:
         update_data = data.model_dump()
         stmt = (
             update(DeadlineModel)
@@ -257,7 +306,9 @@ class DeadlineRepository:
         return result.scalar_one_or_none()
 
     @classmethod
-    async def update_status(cls, deadline_id: int, is_completed: bool, session: AsyncSession, user_id: int) -> DeadlineModel | None:
+    async def update_status(
+        cls, deadline_id: int, is_completed: bool, session: AsyncSession, user_id: int
+    ) -> DeadlineModel | None:
         stmt = (
             update(DeadlineModel)
             .where(DeadlineModel.id == deadline_id, DeadlineModel.user_id == user_id)
@@ -269,14 +320,20 @@ class DeadlineRepository:
         return result.scalar_one_or_none()
 
     @classmethod
-    async def delete_deadline(cls, deadline_id: int, session: AsyncSession, user_id: int) -> bool:
-        stmt = delete(DeadlineModel).where(DeadlineModel.id == deadline_id, DeadlineModel.user_id == user_id)
+    async def delete_deadline(
+        cls, deadline_id: int, session: AsyncSession, user_id: int
+    ) -> bool:
+        stmt = delete(DeadlineModel).where(
+            DeadlineModel.id == deadline_id, DeadlineModel.user_id == user_id
+        )
         result = await session.execute(stmt)
         await session.commit()
         return result.rowcount > 0
 
     @classmethod
-    async def count_by_date(cls, session: AsyncSession, target_date: datetime, user_id: int) -> int:
+    async def count_by_date(
+        cls, session: AsyncSession, target_date: datetime, user_id: int
+    ) -> int:
         start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_of_day = start_of_day.replace(hour=23, minute=59, second=59)
         stmt = (
@@ -296,10 +353,13 @@ class DeadlineRepository:
         stmt = (
             select(func.count())
             .select_from(DeadlineModel)
-            .where(DeadlineModel.user_id == user_id, DeadlineModel.is_completed == False)
+            .where(
+                DeadlineModel.user_id == user_id, DeadlineModel.is_completed == False
+            )
         )
         result = await session.execute(stmt)
         return result.scalar()
+
 
 # ---------- UserRepository и SessionRepository ----------
 class UserRepository:
@@ -310,13 +370,15 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     @classmethod
-    async def create(cls, session: AsyncSession, username: str, email: str, password: str) -> UserModel:
+    async def create(
+        cls, session: AsyncSession, username: str, email: str, password: str
+    ) -> UserModel:
         hashed = pwd_context.hash(password)
         user = UserModel(
             username=username,
             email=email,
             hashed_password=hashed,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
         session.add(user)
         await session.commit()
@@ -327,24 +389,31 @@ class UserRepository:
     def verify_password(cls, plain: str, hashed: str) -> bool:
         return pwd_context.verify(plain, hashed)
 
+
 class SessionRepository:
     @classmethod
-    async def create(cls, session: AsyncSession, user_id: int, expires_days: int = 30) -> str:
+    async def create(
+        cls, session: AsyncSession, user_id: int, expires_days: int = 30
+    ) -> str:
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now() + timedelta(days=expires_days)
         sess = SessionModel(
             user_id=user_id,
             token=token,
             expires_at=expires_at,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
         session.add(sess)
         await session.commit()
         return token
 
     @classmethod
-    async def get_user_by_token(cls, session: AsyncSession, token: str) -> UserModel | None:
-        stmt = select(SessionModel).where(SessionModel.token == token, SessionModel.expires_at > datetime.now())
+    async def get_user_by_token(
+        cls, session: AsyncSession, token: str
+    ) -> UserModel | None:
+        stmt = select(SessionModel).where(
+            SessionModel.token == token, SessionModel.expires_at > datetime.now()
+        )
         result = await session.execute(stmt)
         sess = result.scalar_one_or_none()
         if not sess:

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/tasks", tags=["Задачи"])
 async def create_task(
     task: STaskAdd,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     return await TaskRepository.add_one(task, session, current_user.id)
 
@@ -56,9 +56,11 @@ async def update_task_status(
     task_id: int,
     is_completed: bool,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
-    updated = await TaskRepository.update_status(task_id, is_completed, session, current_user.id)
+    updated = await TaskRepository.update_status(
+        task_id, is_completed, session, current_user.id
+    )
     if updated is None:
         raise HTTPException(404, "Задача не найдена")
     return {"success": True}
@@ -69,9 +71,11 @@ async def update_task(
     task_id: int,
     task_data: STaskUpdate,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
-    updated = await TaskRepository.update_task(task_id, task_data, session, current_user.id)
+    updated = await TaskRepository.update_task(
+        task_id, task_data, session, current_user.id
+    )
     if updated is None:
         raise HTTPException(404, "Задача не найдена")
     return updated
@@ -81,7 +85,7 @@ async def update_task(
 async def delete_task(
     task_id: int,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     deleted = await TaskRepository.delete_task(task_id, session, current_user.id)
     if not deleted:

@@ -12,8 +12,7 @@ router = APIRouter(prefix="/api/events", tags=["События"])
 
 @router.get("/all")
 async def get_all_events(
-    session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    session: SessionDep, current_user: UserModel = Depends(get_current_user)
 ):
     return await EventRepository.find_all(session, current_user.id)
 
@@ -22,9 +21,11 @@ async def get_all_events(
 async def create_event(
     event: EventAdd,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
-    count = await EventRepository.count_by_date(session, event.event_date, current_user.id)
+    count = await EventRepository.count_by_date(
+        session, event.event_date, current_user.id
+    )
     if count >= 3:
         raise HTTPException(400, "В этот день уже есть 3 события")
     return await EventRepository.add_one(event, session, current_user.id)
@@ -34,7 +35,7 @@ async def create_event(
 async def get_events_by_date(
     event_date: date,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     return await EventRepository.find_by_date(session, event_date, current_user.id)
 
@@ -44,15 +45,23 @@ async def update_event(
     event_id: int,
     event_data: EventUpdate,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     if event_data.event_date:
-        count = await EventRepository.count_by_date(session, event_data.event_date, current_user.id)
+        count = await EventRepository.count_by_date(
+            session, event_data.event_date, current_user.id
+        )
         old_event = await session.get(EventModel, event_id)
-        if old_event and old_event.user_id == current_user.id and old_event.event_date != event_data.event_date:
+        if (
+            old_event
+            and old_event.user_id == current_user.id
+            and old_event.event_date != event_data.event_date
+        ):
             if count >= 3:
                 raise HTTPException(400, "В этот день уже есть 3 события")
-    updated = await EventRepository.update_event(event_id, event_data, session, current_user.id)
+    updated = await EventRepository.update_event(
+        event_id, event_data, session, current_user.id
+    )
     if not updated:
         raise HTTPException(404, "Событие не найдено")
     return updated
@@ -62,7 +71,7 @@ async def update_event(
 async def delete_event(
     event_id: int,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     deleted = await EventRepository.delete_event(event_id, session, current_user.id)
     if not deleted:

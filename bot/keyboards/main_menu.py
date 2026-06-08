@@ -1,5 +1,6 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+
 def get_main_menu_keyboard():
     """Главное меню с кнопками"""
     keyboard = InlineKeyboardMarkup(row_width=2)

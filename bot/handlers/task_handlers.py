@@ -4,11 +4,12 @@ from bot.utils.db_helpers import (
     get_user_by_telegram_id,
     get_today_tasks,
     get_uncompleted_tasks_for_today,
-    mark_task_complete
+    mark_task_complete,
 )
 from bot.keyboards.inline_keyboards import get_complete_task_keyboard
 
-@bot.message_handler(commands=['tasks'])
+
+@bot.message_handler(commands=["tasks"])
 def show_tasks(message: Message):
     user = get_user_by_telegram_id(message.chat.id)
     if not user:
@@ -29,7 +30,8 @@ def show_tasks(message: Message):
 
     bot.send_message(message.chat.id, msg, parse_mode="Markdown")
 
-@bot.message_handler(commands=['complete'])
+
+@bot.message_handler(commands=["complete"])
 def ask_complete_task(message: Message):
     user = get_user_by_telegram_id(message.chat.id)
     if not user:
@@ -42,7 +44,10 @@ def ask_complete_task(message: Message):
         return
 
     keyboard = get_complete_task_keyboard(tasks)
-    bot.send_message(message.chat.id, "Выберите задачу для отметки:", reply_markup=keyboard)
+    bot.send_message(
+        message.chat.id, "Выберите задачу для отметки:", reply_markup=keyboard
+    )
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("complete_"))
 def complete_task_callback(call: CallbackQuery):
@@ -56,8 +61,10 @@ def complete_task_callback(call: CallbackQuery):
         bot.edit_message_text(
             "✅ Задача отмечена выполненной!",
             call.message.chat.id,
-            call.message.message_id
+            call.message.message_id,
         )
         bot.answer_callback_query(call.id, "Готово!")
     else:
-        bot.answer_callback_query(call.id, "Не удалось отметить. Возможно, задача уже выполнена.")
+        bot.answer_callback_query(
+            call.id, "Не удалось отметить. Возможно, задача уже выполнена."
+        )

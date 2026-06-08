@@ -12,16 +12,14 @@ router = APIRouter(prefix="/api/deadlines", tags=["Дедлайны"])
 
 @router.get("/all")
 async def get_all_deadlines(
-    session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    session: SessionDep, current_user: UserModel = Depends(get_current_user)
 ):
     return await DeadlineRepository.find_all(session, current_user.id)
 
 
 @router.get("/active")
 async def get_active_deadlines(
-    session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    session: SessionDep, current_user: UserModel = Depends(get_current_user)
 ):
     return await DeadlineRepository.find_active(session, current_user.id)
 
@@ -30,9 +28,11 @@ async def get_active_deadlines(
 async def create_deadline(
     deadline: DeadlineAdd,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
-    count_on_day = await DeadlineRepository.count_by_date(session, deadline.deadline_time, current_user.id)
+    count_on_day = await DeadlineRepository.count_by_date(
+        session, deadline.deadline_time, current_user.id
+    )
     if count_on_day >= 3:
         raise HTTPException(400, "В этот день уже есть 3 дедлайна")
     active_count = await DeadlineRepository.count_active(session, current_user.id)
@@ -45,9 +45,11 @@ async def create_deadline(
 async def get_deadlines_by_date(
     deadline_date: datetime,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
-    return await DeadlineRepository.find_by_date(session, deadline_date, current_user.id)
+    return await DeadlineRepository.find_by_date(
+        session, deadline_date, current_user.id
+    )
 
 
 @router.put("/{deadline_id}", response_model=Deadline)
@@ -55,16 +57,23 @@ async def update_deadline(
     deadline_id: int,
     deadline_data: DeadlineUpdate,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     old_deadline = await session.get(DeadlineModel, deadline_id)
     if not old_deadline or old_deadline.user_id != current_user.id:
         raise HTTPException(404, "Дедлайн не найден")
-    if deadline_data.deadline_time and old_deadline.deadline_time.date() != deadline_data.deadline_time.date():
-        count = await DeadlineRepository.count_by_date(session, deadline_data.deadline_time, current_user.id)
+    if (
+        deadline_data.deadline_time
+        and old_deadline.deadline_time.date() != deadline_data.deadline_time.date()
+    ):
+        count = await DeadlineRepository.count_by_date(
+            session, deadline_data.deadline_time, current_user.id
+        )
         if count >= 3:
             raise HTTPException(400, "На новую дату уже есть 3 дедлайна")
-    updated = await DeadlineRepository.update_deadline(deadline_id, deadline_data, session, current_user.id)
+    updated = await DeadlineRepository.update_deadline(
+        deadline_id, deadline_data, session, current_user.id
+    )
     if not updated:
         raise HTTPException(404, "Дедлайн не найден")
     return updated
@@ -75,9 +84,11 @@ async def update_deadline_status(
     deadline_id: int,
     is_completed: bool,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
-    updated = await DeadlineRepository.update_status(deadline_id, is_completed, session, current_user.id)
+    updated = await DeadlineRepository.update_status(
+        deadline_id, is_completed, session, current_user.id
+    )
     if not updated:
         raise HTTPException(404, "Дедлайн не найден")
     return {"success": True}
@@ -87,9 +98,11 @@ async def update_deadline_status(
 async def delete_deadline(
     deadline_id: int,
     session: SessionDep,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
-    deleted = await DeadlineRepository.delete_deadline(deadline_id, session, current_user.id)
+    deleted = await DeadlineRepository.delete_deadline(
+        deadline_id, session, current_user.id
+    )
     if not deleted:
         raise HTTPException(404, "Дедлайн не найден")
     return {"success": True}

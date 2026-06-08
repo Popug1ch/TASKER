@@ -2,6 +2,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from database import Model
 from datetime import datetime
 
+
 class SessionModel(Model):
     __tablename__ = "sessions"
 
