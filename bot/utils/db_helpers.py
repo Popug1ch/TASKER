@@ -1,8 +1,4 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta
-from models import user, tasks, events, deadline
-from database import DATABASE_URL
 from models.user import UserModel
 from models.tasks import TasksModel
 from models.events import EventModel
@@ -11,7 +7,7 @@ from repository import UserRepository
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database import DATABASE_URL, Model
+from core.database import DATABASE_URL, Model
 
 # Синхронный движок
 sync_engine = create_engine(DATABASE_URL.replace("+aiosqlite", ""))

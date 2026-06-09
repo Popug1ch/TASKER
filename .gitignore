@@ -13,6 +13,7 @@ __pycache__/
 # Настройки IDE
 .vscode/
 .idea/
+.env
 
 # Файлы ОС
 .DS_Store

@@ -1,9 +1,14 @@
+"""
+Модуль маршрутов для работы с дедлайнами (deadlines).
+Все эндпоинты требуют авторизации.
+"""
+
 from fastapi import APIRouter, HTTPException, status, Depends
-from database import SessionDep
+from core.database import SessionDep
 from models.deadline import DeadlineModel
 from schemas.deadline import Deadline, DeadlineAdd, DeadlineUpdate
-from repository import DeadlineRepository
-from dependencies import get_current_user
+from repository.deadline_repository import DeadlineRepository
+from core.dependencies import get_current_user
 from models.user import UserModel
 from datetime import datetime
 
@@ -13,14 +18,34 @@ router = APIRouter(prefix="/api/deadlines", tags=["Дедлайны"])
 @router.get("/all")
 async def get_all_deadlines(
     session: SessionDep, current_user: UserModel = Depends(get_current_user)
-):
+) -> list[Deadline]:
+    """
+    Возвращает все дедлайны текущего пользователя (включая выполненные).
+
+    Параметры:
+        session (SessionDep): сессия БД.
+        current_user (UserModel): текущий авторизованный пользователь.
+
+    Возвращает:
+        list[Deadline]: список дедлайнов.
+    """
     return await DeadlineRepository.find_all(session, current_user.id)
 
 
 @router.get("/active")
 async def get_active_deadlines(
     session: SessionDep, current_user: UserModel = Depends(get_current_user)
-):
+) -> list[Deadline]:
+    """
+    Возвращает только активные (невыполненные) дедлайны.
+
+    Параметры:
+        session (SessionDep): сессия БД.
+        current_user (UserModel): текущий пользователь.
+
+    Возвращает:
+        list[Deadline]: список активных дедлайнов.
+    """
     return await DeadlineRepository.find_active(session, current_user.id)
 
 
@@ -29,7 +54,21 @@ async def create_deadline(
     deadline: DeadlineAdd,
     session: SessionDep,
     current_user: UserModel = Depends(get_current_user),
-):
+) -> Deadline:
+    """
+    Создаёт новый дедлайн.
+
+    Параметры:
+        deadline (DeadlineAdd): данные дедлайна (название, дата/время).
+        session (SessionDep): сессия БД.
+        current_user (UserModel): текущий пользователь.
+
+    Возвращает:
+        Deadline: созданный объект дедлайна.
+
+    Исключения:
+        400: превышен лимит дедлайнов на день (3) или общий лимит (9).
+    """
     count_on_day = await DeadlineRepository.count_by_date(
         session, deadline.deadline_time, current_user.id
     )
@@ -46,7 +85,18 @@ async def get_deadlines_by_date(
     deadline_date: datetime,
     session: SessionDep,
     current_user: UserModel = Depends(get_current_user),
-):
+) -> list[Deadline]:
+    """
+    Возвращает дедлайны на конкретную дату (без учёта времени суток).
+
+    Параметры:
+        deadline_date (datetime): дата (значение времени игнорируется).
+        session (SessionDep): сессия БД.
+        current_user (UserModel): текущий пользователь.
+
+    Возвращает:
+        list[Deadline]: список дедлайнов на указанную дату.
+    """
     return await DeadlineRepository.find_by_date(
         session, deadline_date, current_user.id
     )
@@ -58,7 +108,23 @@ async def update_deadline(
     deadline_data: DeadlineUpdate,
     session: SessionDep,
     current_user: UserModel = Depends(get_current_user),
-):
+) -> Deadline:
+    """
+    Полное обновление дедлайна (название, дата/время).
+
+    Параметры:
+        deadline_id (int): ID дедлайна.
+        deadline_data (DeadlineUpdate): новые данные.
+        session (SessionDep): сессия БД.
+        current_user (UserModel): текущий пользователь.
+
+    Возвращает:
+        Deadline: обновлённый дедлайн.
+
+    Исключения:
+        404: дедлайн не найден или принадлежит другому пользователю.
+        400: при смене даты превышен лимит дедлайнов на новый день.
+    """
     old_deadline = await session.get(DeadlineModel, deadline_id)
     if not old_deadline or old_deadline.user_id != current_user.id:
         raise HTTPException(404, "Дедлайн не найден")
@@ -85,7 +151,22 @@ async def update_deadline_status(
     is_completed: bool,
     session: SessionDep,
     current_user: UserModel = Depends(get_current_user),
-):
+) -> dict:
+    """
+    Обновляет только статус дедлайна (выполнен/не выполнен).
+
+    Параметры:
+        deadline_id (int): ID дедлайна.
+        is_completed (bool): новое состояние.
+        session (SessionDep): сессия БД.
+        current_user (UserModel): текущий пользователь.
+
+    Возвращает:
+        dict: сообщение об успехе.
+
+    Исключения:
+        404: дедлайн не найден.
+    """
     updated = await DeadlineRepository.update_status(
         deadline_id, is_completed, session, current_user.id
     )
@@ -99,7 +180,21 @@ async def delete_deadline(
     deadline_id: int,
     session: SessionDep,
     current_user: UserModel = Depends(get_current_user),
-):
+) -> dict:
+    """
+    Удаление дедлайна.
+
+    Параметры:
+        deadline_id (int): ID дедлайна.
+        session (SessionDep): сессия БД.
+        current_user (UserModel): текущий пользователь.
+
+    Возвращает:
+        dict: сообщение об успехе.
+
+    Исключения:
+        404: дедлайн не найден.
+    """
     deleted = await DeadlineRepository.delete_deadline(
         deadline_id, session, current_user.id
     )
