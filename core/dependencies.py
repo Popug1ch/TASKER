@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from database import get_db
+from core.database import get_db
 from repository.session_repository import SessionRepository
 
 

@@ -54,7 +54,15 @@ async def lifespan(app: FastAPI):
     print("Выключение сервера")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Таскер API",
+    description="API для управления задачами, событиями и дедлайнами.",
+    version="1.0.0",
+    contact={
+        "name": "Popugaev MI",
+    },
+    lifespan=lifespan,
+)
 
 # Подключение роутеров
 app.include_router(tasks_router)  # задачи
