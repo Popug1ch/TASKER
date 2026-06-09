@@ -20,6 +20,7 @@ class SessionModel(Model):
         expires_at (datetime): дата и время истечения сессии.
         created_at (datetime): момент создания сессии.
     """
+
     __tablename__ = "sessions"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)

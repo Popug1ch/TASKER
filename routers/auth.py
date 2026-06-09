@@ -37,9 +37,7 @@ async def register(user_data: UserRegister, session: SessionDep) -> UserOut:
 
 
 @router.post("/login")
-async def login(
-    response: Response, user_data: UserLogin, session: SessionDep
-) -> dict:
+async def login(response: Response, user_data: UserLogin, session: SessionDep) -> dict:
     """
     Аутентификация пользователя и установка сессионной cookie.
 
@@ -63,9 +61,9 @@ async def login(
     response.set_cookie(
         key="session_token",
         value=token,
-        httponly=True,               # защита от XSS
-        max_age=30 * 24 * 3600,      # 30 дней
-        samesite="lax",              # защита от CSRF
+        httponly=True,  # защита от XSS
+        max_age=30 * 24 * 3600,  # 30 дней
+        samesite="lax",  # защита от CSRF
     )
     return {
         "message": "Успешный вход",

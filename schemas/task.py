@@ -18,6 +18,7 @@ class STaskIn(BaseModel):
         priority (str): приоритет (Низкая, Средняя, Высокая, Очень высокая).
         is_completed (bool): флаг выполнения (по умолчанию False).
     """
+
     name: str
     start_time: datetime
     end_time: datetime
@@ -28,11 +29,13 @@ class STaskIn(BaseModel):
 
 class STaskAdd(STaskIn):
     """Схема для создания новой задачи (псевдоним)."""
+
     pass
 
 
 class STaskUpdate(STaskIn):
     """Схема для обновления задачи (псевдоним)."""
+
     pass
 
 
@@ -44,6 +47,7 @@ class STask(STaskIn):
         id (int): идентификатор задачи.
         duration (int): длительность в минутах (вычисляется на сервере).
     """
+
     id: int
     duration: int
 

@@ -25,6 +25,7 @@ class TasksModel(Model):
         priority (str): уровень важности (Низкая, Средняя, Высокая, Очень высокая).
         is_completed (bool): флаг выполнения задачи (по умолчанию False).
     """
+
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)

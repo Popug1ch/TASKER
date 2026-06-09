@@ -21,6 +21,7 @@ class UserModel(Model):
         telegram_id (int | None): ID в Telegram (для привязки бота).
         created_at (datetime): дата регистрации.
     """
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)

@@ -22,6 +22,7 @@ class DeadlineModel(Model):
         created_at (datetime): момент создания (по умолчанию текущее время).
         is_completed (bool): выполнен ли дедлайн.
     """
+
     __tablename__ = "deadlines"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)

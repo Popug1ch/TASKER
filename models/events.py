@@ -20,6 +20,7 @@ class EventModel(Model):
         name (str): название события.
         event_date (date): дата события (без времени).
     """
+
     __tablename__ = "events"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)

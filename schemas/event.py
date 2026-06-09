@@ -14,17 +14,20 @@ class EventIn(BaseModel):
         name (str): название события.
         event_date (date): дата события (без времени).
     """
+
     name: str
     event_date: date
 
 
 class EventAdd(EventIn):
     """Схема для создания нового события (псевдоним)."""
+
     pass
 
 
 class EventUpdate(EventIn):
     """Схема для обновления события (псевдоним)."""
+
     pass
 
 
@@ -35,6 +38,7 @@ class Event(EventIn):
     Атрибуты:
         id (int): идентификатор события.
     """
+
     id: int
 
     model_config = ConfigDict(from_attributes=True)

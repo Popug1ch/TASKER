@@ -17,6 +17,7 @@ class SettingsModel(Model):
         id (int): первичный ключ (всегда 1).
         current_week_start (str): дата начала текущей недели в ISO-формате.
     """
+
     __tablename__ = "settings"
 
     id: Mapped[int] = mapped_column(primary_key=True, default=1)

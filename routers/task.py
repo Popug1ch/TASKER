@@ -39,7 +39,9 @@ async def create_task(
 async def get_tasks(
     session: SessionDep,
     current_user: UserModel = Depends(get_current_user),
-    start_date: Optional[str] = Query(None, description="Начало диапазона (YYYY-MM-DD)"),
+    start_date: Optional[str] = Query(
+        None, description="Начало диапазона (YYYY-MM-DD)"
+    ),
     end_date: Optional[str] = Query(None, description="Конец диапазона (YYYY-MM-DD)"),
 ) -> list[STask]:
     """

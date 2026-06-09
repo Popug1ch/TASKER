@@ -15,6 +15,7 @@ class DeadlineIn(BaseModel):
         deadline_time (datetime): дата и время сгорания.
         is_completed (bool): флаг выполнения (по умолчанию False).
     """
+
     name: str
     deadline_time: datetime
     is_completed: bool = False
@@ -22,11 +23,13 @@ class DeadlineIn(BaseModel):
 
 class DeadlineAdd(DeadlineIn):
     """Схема для создания нового дедлайна (псевдоним)."""
+
     pass
 
 
 class DeadlineUpdate(DeadlineIn):
     """Схема для обновления дедлайна (псевдоним)."""
+
     pass
 
 
@@ -38,6 +41,7 @@ class Deadline(DeadlineIn):
         id (int): идентификатор дедлайна.
         created_at (datetime): дата и время создания.
     """
+
     id: int
     created_at: datetime
 

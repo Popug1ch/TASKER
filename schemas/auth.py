@@ -14,6 +14,7 @@ class UserRegister(BaseModel):
         email (EmailStr): электронная почта (проверяется формат).
         password (str): пароль (длина от 6 до 72 символов в UTF-8).
     """
+
     username: str
     email: EmailStr
     password: str = Field(min_length=6, max_length=72)
@@ -36,6 +37,7 @@ class UserLogin(BaseModel):
         email (EmailStr): электронная почта.
         password (str): пароль.
     """
+
     email: EmailStr
     password: str
 
@@ -49,6 +51,7 @@ class UserOut(BaseModel):
         username (str): имя пользователя.
         email (str): электронная почта.
     """
+
     id: int
     username: str
     email: str
@@ -62,5 +65,6 @@ class TokenResponse(BaseModel):
         token (str): сессионный токен (cookie).
         user (UserOut): данные пользователя.
     """
+
     token: str
     user: UserOut
