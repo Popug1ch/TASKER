@@ -3,7 +3,7 @@ from models.user import UserModel
 from models.tasks import TasksModel
 from models.events import EventModel
 from models.deadline import DeadlineModel
-from repository import UserRepository
+from repository.user_repository import UserRepository
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
